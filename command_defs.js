@@ -1,8 +1,8 @@
-import DiscordRequest from './utils.js';
+
 import { GetStyles, GetSamplers, GetModels } from './sd_api.js';
 
-COMMAND_TXT2IMG = {
-    name: "Text to Image",
+export const TXT2IMG = {
+    name: "text2img",
     type: 1,
     description: "Create an image from a prompt.",
     options: [
@@ -52,8 +52,8 @@ COMMAND_TXT2IMG = {
     ]
 };
 
-COMMAND_CHANGEMODEL = {
-    name: "Change model",
+export const CHANGEMODEL = {
+    name: "model",
     type: 1,
     description: "Change the current model.",
     options: [
@@ -65,46 +65,4 @@ COMMAND_CHANGEMODEL = {
             choices: GetModels()
         },
     ]
-}
-
-export async function HasGuildCommands(appId, guildId, commands) {
-  if (guildId === '' || appId === '') return;
-
-  return commands.forEach((c) => HasGuildCommand(appId, guildId, c));
-}
-
-// Checks for a command
-async function HasGuildCommand(appId, guildId, command) {
-  // API endpoint to get and post guild commands
-  const endpoint = `applications/${appId}/guilds/${guildId}/commands`;
-
-  try {
-    const res = await DiscordRequest(endpoint, { method: 'GET' });
-    const data = await res.json();
-
-    if (data) {
-      const installedNames = data.map((c) => c['name']);
-      // This is just matching on the name, so it's not good for updates
-      if (!installedNames.includes(command['name'])) {
-        console.log(`Installing "${command['name']}"`);
-        InstallGuildCommand(appId, guildId, command);
-      } else {
-        console.log(`"${command['name']}" command already installed`);
-      }
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// Installs a command
-export async function InstallGuildCommand(appId, guildId, command) {
-  // API endpoint to get and post guild commands
-  const endpoint = `applications/${appId}/guilds/${guildId}/commands`;
-  // install command
-  try {
-    await DiscordRequest(endpoint, { method: 'POST', body: command });
-  } catch (err) {
-    console.error(err);
-  }
-}
+};

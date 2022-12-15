@@ -19,3 +19,8 @@ export function Text2Img(prompt, neg_prompt, style, seed, sampler, steps, cfg_sc
 {
 
 }
+
+export function SetModel(model)
+{
+
+}
