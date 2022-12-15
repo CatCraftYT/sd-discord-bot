@@ -1,5 +1,7 @@
 import { DiscordRequest } from './utils.js';
 
+const ALWAYS_REINSTALL = true;
+
 export async function HasGuildCommands(appId, guildId, commands) {
   if (guildId === '' || appId === '') return;
 
@@ -18,7 +20,7 @@ async function HasGuildCommand(appId, guildId, command) {
     if (data) {
       const installedNames = data.map((c) => c['name']);
       // This is just matching on the name, so it's not good for updates
-      if (!installedNames.includes(command['name'])) {
+      if (ALWAYS_REINSTALL || !installedNames.includes(command['name'])) {
         console.log(`Installing command "${command['name']}"`);
         InstallGuildCommand(appId, guildId, command);
       } else {

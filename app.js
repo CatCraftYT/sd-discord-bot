@@ -23,8 +23,6 @@ app.use(verifyKeyMiddleware(process.env.PUBLIC_KEY));
 
 app.post('/', HandleInteraction)
 app.listen(PORT, () => {
-    console.log('Listening on port', PORT);
-  
     // Check if guild commands from commands.js are installed (if not, install them)
     HasGuildCommands(process.env.APP_ID, process.env.GUILD_ID, [
       commands.TXT2IMG,
@@ -35,7 +33,6 @@ app.listen(PORT, () => {
 async function HandleInteraction(req, res)
 {
     const { type, token, data } = req.body;
-    console.log(req.body);
 
     if (type === InteractionType.PING) {
         return res.send({ type: InteractionResponseType.PONG });
@@ -49,18 +46,17 @@ async function HandleInteraction(req, res)
 async function HandleCommand(token, data, res)
 {
     const options = data["options"];
-    console.log(options);
-    var message;
 
     if (data["name"] === commands.TXT2IMG["name"])
     {
-        if (currentlyGenerating === true) { message = "A generation is already in progress - please wait until it is completed."; }
+        if (currentlyGenerating === true) {
+            return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "Another generation is already in progress - please wait until it is complete.", flags: InteractionResponseFlags.EPHEMERAL}});
+        }
         else {
             Text2Img(options[0], options[1], options[2], options[3], options[4], options[5], options[6]);
-            message = "> Generating image with prompt: `" + options[0]["value"] + "`";
             currentlyGenerating = true;
         }
-        return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: message}});
+        return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "> Generating image with prompt: `" + options[0]["value"] + "`"}});
     }
 
     if (data["name"] === commands.CHANGEMODEL["name"])
