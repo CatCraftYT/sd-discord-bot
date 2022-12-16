@@ -1,6 +1,6 @@
 import { DiscordRequest } from './utils.js';
 
-const ALWAYS_REINSTALL = true;
+const ALWAYS_REINSTALL = false;
 
 export async function HasGuildCommands(appId, guildId, commands) {
   if (guildId === '' || appId === '') return;
