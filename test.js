@@ -1,3 +1,3 @@
-import { Text2Img } from './sd_api.js';
+import { DiscordSendImage } from './utils.js';
 
-Text2Img("test", undefined, undefined, undefined, undefined, undefined, undefined)
+await DiscordSendImage("a", "a", "a");

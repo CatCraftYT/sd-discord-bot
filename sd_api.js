@@ -51,7 +51,7 @@ export async function Text2Img(prompt, neg_prompt, style, seed, sampler, steps, 
     let json = {
         prompt:          prompt,
         negative_prompt: neg_prompt === undefined ? "" : neg_prompt,
-        styles:          [style === undefined          ? "" : style],
+        styles:          [style === undefined          ? "None" : style],
         seed:            seed === undefined            ? -1 : seed,
         sampler_name:    sampler === undefined         ? "Euler a" : sampler,
         steps:           steps === undefined           ? 80 : steps,

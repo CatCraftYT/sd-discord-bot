@@ -11,11 +11,10 @@ import { HasGuildCommands } from './commands_handler.js';
 import { Text2Img, SetModel, GetProgress } from './sd_api.js';
 import { verifyKeyMiddleware } from 'discord-interactions';
 import * as commands from './command_defs.js';
-import { DiscordRequest } from './utils.js';
+import { DiscordSendImage } from './utils.js';
 
 const IMAGE_UPDATE_DELAY = 2000;
 let currentlyGenerating = false;
-var currentToken;
 
 // Create an express app
 const app = express();
@@ -59,6 +58,7 @@ async function HandleCommand(token, data, res)
     if (currentlyGenerating !== true) {
         if (data["name"] === commands.TXT2IMG["name"])
         {
+            console.log(`Generating image with prompt: "${options[0]["value"]}"`);
             Text2Img(options[0], options[1], options[2], options[3], options[4], options[5], options[6])//.then(json => EndImageGeneration(json["images"][0]));
             currentlyGenerating = true;
             UpdateImageLoop(token, options[0]);
@@ -74,20 +74,8 @@ async function UploadImageAttachment(token, image, filename)
 {
     const endpoint = `webhooks/${process.env.APP_ID}/${token}/messages/@original`;
     let attachmentId = (Date.now - 1420070400000) << 22
-    let body = {
-        attachments: [{
-            id: attachmentId
-        }],
-        [`files[${attachmentId}]`]: `data:image/png;base64,${image}`
-    }
-
-    DiscordRequest(endpoint, {
-        method: 'patch',
-        body:    body,
-        headers: {
-            "Content-Disposition":`name=${attachmentId}; filename=${filename}`
-        }
-    });
+    
+    DiscordSendImage(endpoint, image, filename, attachmentId);
 }
 
 async function UpdateImageLoop(token, prompt)
@@ -97,10 +85,10 @@ async function UpdateImageLoop(token, prompt)
     while (currentlyGenerating)
     {
         let json = await GetProgress();
-        if (json["current_image"] === undefined) { continue; }
-        console.log(json);
+        if (json["current_image"] === null) { continue; }
         progress = json["progress"];
-        UploadImageAttachment(token, json["current_image"], prompt);
+        console.log(`Generation progress: ${progress*100}%`);
+        await UploadImageAttachment(token, json["current_image"], prompt);
         
         await new Promise(resolve => setTimeout(resolve, IMAGE_UPDATE_DELAY));;
     }
@@ -109,5 +97,5 @@ async function UpdateImageLoop(token, prompt)
 async function EndImageGeneration(finalImage)
 {
     currentlyGenerating = false;
-    UploadImageAttachment(finalImage, "image.png");
+    UploadImageAttachment(finalImage, "final_image");
 }
