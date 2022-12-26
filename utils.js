@@ -28,7 +28,7 @@ export async function DiscordRequest(endpoint, options) {
     return res;
 }
 
-export async function DiscordSendImage(endpoint, image, filename, id)
+export async function DiscordSendImage(endpoint, image)
 {
     const boundary = "bMfzKPBnqw8jvzPzXmfBDxZ9aQ4Jd4Df3QQWg4nuFwnG4nC2BT";
     let body = `
@@ -37,32 +37,24 @@ Content-Disposition: form-data; name="payload_json"
 Content-Type: application/json
 
 {
-    "embeds": [{
-        "thumbnail": {
-          "url": "attachment://${filename}.png"
-        },
-        "image": {
-          "url": "attachment://${filename}.png"
-        }
-    }],
     "attachments": [{
-        "id": ${id},
-        "filename": "${filename}.png"
+        "id": 0,
+        "filename": "generated_file.png"
     }]
 }
 --${boundary}
-Content-Disposition: form-data; name="files[${id}]"; filename="${filename}.png"
+Content-Disposition: form-data; name="files[0]"; filename="generated_file.png"
 Content-Type: image/png
 
-${image}
---${boundary}
+${Buffer.from(image, "base64").toString("binary")}
+--${boundary}--
 `;
 
     const res = await fetch(api + endpoint, {
         method: 'patch',
         headers: {
             Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
-            'Content-Type': `multipart/form-data; charset=UTF-8; boundary=${boundary}`,
+            'Content-Type': `multipart/form-data; boundary=${boundary}`,
             'User-Agent': 'sd-discord-bot',
         },
         body: body
@@ -75,3 +67,9 @@ ${image}
     }
     return res;
 }
+
+//"embeds": [{
+//    "image": {
+//        "url": "attachment://generated_file.png"
+//      }
+//  }],

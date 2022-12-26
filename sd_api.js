@@ -49,13 +49,13 @@ export async function SetModel(model)
 export async function Text2Img(prompt, neg_prompt, style, seed, sampler, steps, cfg_scale)
 {
     let json = {
-        prompt:          prompt,
-        negative_prompt: neg_prompt === undefined ? "" : neg_prompt,
-        styles:          [style === undefined          ? "None" : style],
-        seed:            seed === undefined            ? -1 : seed,
-        sampler_name:    sampler === undefined         ? "Euler a" : sampler,
-        steps:           steps === undefined           ? 80 : steps,
-        cfg_scale:       cfg_scale === undefined       ? 7 : cfg_scale
+        prompt:          prompt["value"],
+        negative_prompt: neg_prompt === undefined      ? "" : neg_prompt["value"],
+        styles:          [style === undefined          ? "None" : style["value"]],
+        seed:            seed === undefined            ? -1 : seed["value"],
+        sampler_name:    sampler === undefined         ? "Euler a" : sampler["value"],
+        steps:           steps === undefined           ? 80 : steps["value"],
+        cfg_scale:       cfg_scale === undefined       ? 7 : cfg_scale["value"]
     };
 
     return fetch_async("http://127.0.0.1:7860/sdapi/v1/txt2img", {

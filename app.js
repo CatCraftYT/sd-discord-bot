@@ -59,9 +59,9 @@ async function HandleCommand(token, data, res)
         if (data["name"] === commands.TXT2IMG["name"])
         {
             console.log(`Generating image with prompt: "${options[0]["value"]}"`);
-            Text2Img(options[0], options[1], options[2], options[3], options[4], options[5], options[6])//.then(json => EndImageGeneration(json["images"][0]));
+            Text2Img(options[0], options[1], options[2], options[3], options[4], options[5], options[6]).then(json => EndImageGeneration(json["images"][0], token));
             currentlyGenerating = true;
-            UpdateImageLoop(token, options[0]);
+            UpdateImageLoop(token);
             return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "> Generating image with prompt: `" + options[0]["value"] + "`"}});
         }
     }
@@ -70,15 +70,15 @@ async function HandleCommand(token, data, res)
     }
 }
 
-async function UploadImageAttachment(token, image, filename)
+async function UploadImageAttachment(token, image)
 {
     const endpoint = `webhooks/${process.env.APP_ID}/${token}/messages/@original`;
-    let attachmentId = (Date.now - 1420070400000) << 22
+    //let attachmentId = (Date.now - 1420070400000) << 22
     
-    DiscordSendImage(endpoint, image, filename, attachmentId);
+    DiscordSendImage(endpoint, image);
 }
 
-async function UpdateImageLoop(token, prompt)
+async function UpdateImageLoop(token)
 {
     var progress;
 
@@ -88,14 +88,15 @@ async function UpdateImageLoop(token, prompt)
         if (json["current_image"] === null) { continue; }
         progress = json["progress"];
         console.log(`Generation progress: ${progress*100}%`);
-        await UploadImageAttachment(token, json["current_image"], prompt);
+        await UploadImageAttachment(token, json["current_image"]);
         
         await new Promise(resolve => setTimeout(resolve, IMAGE_UPDATE_DELAY));;
     }
 }
 
-async function EndImageGeneration(finalImage)
+async function EndImageGeneration(finalImage, token)
 {
     currentlyGenerating = false;
-    UploadImageAttachment(finalImage, "final_image");
+    UploadImageAttachment(token, finalImage);
+    console.log("Generation completed.")
 }
