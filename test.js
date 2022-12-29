@@ -1,3 +1,3 @@
 import { DiscordSendImage } from './utils.js';
 
-await DiscordSendImage("a", "a", "a");
+await DiscordSendImage("a", "testimagedata1234");

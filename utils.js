@@ -31,12 +31,18 @@ export async function DiscordRequest(endpoint, options) {
 export async function DiscordSendImage(endpoint, image)
 {
     const boundary = "bMfzKPBnqw8jvzPzXmfBDxZ9aQ4Jd4Df3QQWg4nuFwnG4nC2BT";
-    let body = `
+    const body = `
 --${boundary}
 Content-Disposition: form-data; name="payload_json"
 Content-Type: application/json
 
 {
+    "embeds": [{
+        "image": {
+            "url": "attachment://generated_file.png"
+            }
+    }],
+
     "attachments": [{
         "id": 0,
         "filename": "generated_file.png"
@@ -46,30 +52,28 @@ Content-Type: application/json
 Content-Disposition: form-data; name="files[0]"; filename="generated_file.png"
 Content-Type: image/png
 
-${Buffer.from(image, "base64").toString("binary")}
---${boundary}--
 `;
 
-    const res = await fetch(api + endpoint, {
+    const payload = Buffer.concat([
+        Buffer.from(body, 'utf-8'),
+        Buffer.from(image, 'base64'),
+        Buffer.from(`\r\n--${boundary}--\r\n`)
+    ]);
+
+    const response = await fetch(api + endpoint, {
         method: 'patch',
         headers: {
             Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
             'Content-Type': `multipart/form-data; boundary=${boundary}`,
             'User-Agent': 'sd-discord-bot',
         },
-        body: body
+        body: payload
     });
 
-    if (!res.ok) {
-        const data = await res.json();
-        console.log(res.status);
+    if (!response.ok) {
+        const data = await response.json();
+        console.log(response.status);
         throw new Error(JSON.stringify(data));
     }
-    return res;
+    return response;
 }
-
-//"embeds": [{
-//    "image": {
-//        "url": "attachment://generated_file.png"
-//      }
-//  }],

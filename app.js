@@ -59,6 +59,7 @@ async function HandleCommand(token, data, res)
         if (data["name"] === commands.TXT2IMG["name"])
         {
             console.log(`Generating image with prompt: "${options[0]["value"]}"`);
+            console.log(JSON.stringify(options));
             Text2Img(options[0], options[1], options[2], options[3], options[4], options[5], options[6]).then(json => EndImageGeneration(json["images"][0], token));
             currentlyGenerating = true;
             UpdateImageLoop(token);
