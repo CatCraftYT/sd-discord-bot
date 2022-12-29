@@ -46,9 +46,15 @@ export async function SetModel(model)
     });
 }
 
+export async function GetProgress()
+{
+    return fetch_async("http://127.0.0.1:7860/sdapi/v1/progress")
+    .then(res => { return res.json() });
+}
+
 export async function Text2Img(prompt, neg_prompt, style, seed, sampler, steps, cfg_scale)
 {
-    let json = {
+    const json = {
         prompt:          prompt["value"],
         negative_prompt: neg_prompt === undefined      ? "" : neg_prompt["value"],
         styles:          [style === undefined          ? "None" : style["value"]],
@@ -62,11 +68,28 @@ export async function Text2Img(prompt, neg_prompt, style, seed, sampler, steps, 
         method: 'post',
         body:    JSON.stringify(json),
         headers: { 'Content-Type': 'application/json' }
-    }).then(res => { return res.json() });;
+    }).then(res => { return res.json() });
 }
 
-export async function GetProgress()
+export async function Img2Img(prompt, url, neg_prompt, denoising_strength, style, seed, sampler, steps, cfg_scale)
 {
-    return fetch_async("http://127.0.0.1:7860/sdapi/v1/progress")
-    .then(res => { return res.json() });
+    const image = Buffer.from(await (await fetch(url["value"])).arrayBuffer()).toString("base64");
+
+    const json = {
+        init_images:        [image],
+        prompt:             prompt["value"],
+        denoising_strength: denoising_strength === undefined ? 0.65 : denoising_strength["value"],
+        negative_prompt:    neg_prompt === undefined         ? "" : neg_prompt["value"],
+        styles:             [style === undefined             ? "None" : style["value"]],
+        seed:               seed === undefined               ? -1 : seed["value"],
+        sampler_name:       sampler === undefined            ? "Euler a" : sampler["value"],
+        steps:              steps === undefined              ? 80 : steps["value"],
+        cfg_scale:          cfg_scale === undefined          ? 7 : cfg_scale["value"]
+    };
+
+    return fetch_async("http://127.0.0.1:7860/sdapi/v1/img2img", {
+        method: 'post',
+        body:    JSON.stringify(json),
+        headers: { 'Content-Type': 'application/json' }
+    }).then(res => { return res.json() });
 }

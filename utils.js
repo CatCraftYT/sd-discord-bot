@@ -40,7 +40,7 @@ Content-Type: application/json
     "embeds": [{
         "image": {
             "url": "attachment://generated_file.png"
-            }
+        }
     }],
 
     "attachments": [{
@@ -76,4 +76,18 @@ Content-Type: image/png
         throw new Error(JSON.stringify(data));
     }
     return response;
+}
+
+export function IsValidDiscordCDNUrl(url)
+{
+    try
+    {
+        if (new URL(url).hostname !== "cdn.discordapp.com") { return "Invalid url for img2img. Use discord attachment link (cdn.discordapp.com)."; }
+    }
+    catch (exception)
+    {
+        if (exception instanceof TypeError) { return "Invalid URL. It should start with `https://cdn.discordapp.com`"; }
+        throw exception;
+    }
+    return "";
 }

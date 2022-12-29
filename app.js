@@ -8,10 +8,10 @@ import {
   ButtonStyleTypes,
 } from 'discord-interactions';
 import { HasGuildCommands } from './commands_handler.js';
-import { Text2Img, SetModel, GetProgress } from './sd_api.js';
+import { Text2Img, Img2Img, SetModel, GetProgress } from './sd_api.js';
 import { verifyKeyMiddleware } from 'discord-interactions';
 import * as commands from './command_defs.js';
-import { DiscordSendImage } from './utils.js';
+import { DiscordSendImage, IsValidDiscordCDNUrl } from './utils.js';
 
 const IMAGE_UPDATE_DELAY = 2000;
 let currentlyGenerating = false;
@@ -28,6 +28,7 @@ app.listen(PORT, () => {
     // Check if guild commands from commands.js are installed (if not, install them)
     HasGuildCommands(process.env.APP_ID, process.env.GUILD_ID, [
       commands.TXT2IMG,
+      commands.IMG2IMG,
       commands.CHANGEMODEL,
     ]);
   });
@@ -64,6 +65,24 @@ async function HandleCommand(token, data, res)
             currentlyGenerating = true;
             UpdateImageLoop(token);
             return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "> Generating image with prompt: `" + options[0]["value"] + "`"}});
+        }
+
+        if (data["name"] === commands.IMG2IMG["name"])
+        {
+            console.log(`Generating image (img2img) with prompt: "${options[0]["value"]}", URL "${options[1]["value"]}"`);
+            console.log(JSON.stringify(options));
+
+            const urlError = IsValidDiscordCDNUrl(options[1]["value"])
+            if (urlError) {
+                res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: urlError, flags: InteractionResponseFlags.EPHEMERAL}})
+                return;
+            }
+
+            Img2Img(options[0], options[1], options[2], options[3], options[4], options[5], options[6], options[7], options[8]).then(json => EndImageGeneration(json["images"][0], token));
+
+            currentlyGenerating = true;
+            UpdateImageLoop(token);
+            return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: `Generating image (img2img) with prompt: \`${options[0]["value"]}\`, URL \`${options[1]["value"]}\``}});
         }
     }
     else {
