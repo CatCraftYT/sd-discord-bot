@@ -52,16 +52,16 @@ export async function GetProgress()
     .then(res => { return res.json() });
 }
 
-export async function Text2Img(prompt, neg_prompt, style, seed, sampler, steps, cfg_scale)
+export async function Text2Img({prompt, neg_prompt, style, seed, sampler, steps, cfg_scale})
 {
     const json = {
-        prompt:          prompt["value"],
-        negative_prompt: neg_prompt === undefined      ? "" : neg_prompt["value"],
-        styles:          [style === undefined          ? "None" : style["value"]],
-        seed:            seed === undefined            ? -1 : seed["value"],
-        sampler_name:    sampler === undefined         ? "Euler a" : sampler["value"],
-        steps:           steps === undefined           ? 80 : steps["value"],
-        cfg_scale:       cfg_scale === undefined       ? 7 : cfg_scale["value"]
+        prompt:          prompt,
+        negative_prompt: neg_prompt === undefined      ? "" : neg_prompt,
+        styles:          [style === undefined          ? "None" : style],
+        seed:            seed === undefined            ? -1 : seed,
+        sampler_name:    sampler === undefined         ? "Euler a" : sampler,
+        steps:           steps === undefined           ? 80 : steps,
+        cfg_scale:       cfg_scale === undefined       ? 7 : cfg_scale
     };
 
     return fetch_async("http://127.0.0.1:7860/sdapi/v1/txt2img", {
@@ -71,20 +71,20 @@ export async function Text2Img(prompt, neg_prompt, style, seed, sampler, steps, 
     }).then(res => { return res.json() });
 }
 
-export async function Img2Img(prompt, url, neg_prompt, denoising_strength, style, seed, sampler, steps, cfg_scale)
+export async function Img2Img({prompt, url, neg_prompt, denoising_strength, style, seed, sampler, steps, cfg_scale})
 {
-    const image = Buffer.from(await (await fetch(url["value"])).arrayBuffer()).toString("base64");
+    const image = Buffer.from(await (await fetch(url)).arrayBuffer()).toString("base64");
 
     const json = {
         init_images:        [image],
-        prompt:             prompt["value"],
-        denoising_strength: denoising_strength === undefined ? 0.65 : denoising_strength["value"],
-        negative_prompt:    neg_prompt === undefined         ? "" : neg_prompt["value"],
-        styles:             [style === undefined             ? "None" : style["value"]],
-        seed:               seed === undefined               ? -1 : seed["value"],
-        sampler_name:       sampler === undefined            ? "Euler a" : sampler["value"],
-        steps:              steps === undefined              ? 80 : steps["value"],
-        cfg_scale:          cfg_scale === undefined          ? 7 : cfg_scale["value"]
+        prompt:             prompt,
+        denoising_strength: denoising_strength === undefined ? 0.65 : denoising_strength,
+        negative_prompt:    neg_prompt === undefined         ? "" : neg_prompt,
+        styles:             [style === undefined             ? "None" : style],
+        seed:               seed === undefined               ? -1 : seed,
+        sampler_name:       sampler === undefined            ? "Euler a" : sampler,
+        steps:              steps === undefined              ? 80 : steps,
+        cfg_scale:          cfg_scale === undefined          ? 7 : cfg_scale
     };
 
     return fetch_async("http://127.0.0.1:7860/sdapi/v1/img2img", {

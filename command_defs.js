@@ -1,6 +1,8 @@
 
 import { GetStyles, GetSamplers, GetModels } from './sd_api.js';
 
+// options MUST be the same as sd_api because of kwargs
+
 export const TXT2IMG = {
     name: "text2img",
     type: 1,

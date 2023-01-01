@@ -4,7 +4,6 @@
     "discord-interactions": "^3.2.0",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
-    "formdata-node": "^5.0.0",
     "node-fetch": "^3.3.0",
     "npm": "^9.2.0",
     "sync-fetch": "^0.4.2"

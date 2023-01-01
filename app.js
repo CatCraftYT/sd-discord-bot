@@ -11,7 +11,8 @@ import { HasGuildCommands } from './commands_handler.js';
 import { Text2Img, Img2Img, SetModel, GetProgress } from './sd_api.js';
 import { verifyKeyMiddleware } from 'discord-interactions';
 import * as commands from './command_defs.js';
-import { DiscordSendImage, IsValidDiscordCDNUrl } from './utils.js';
+import { ConvertOptionsToDict, DiscordSendImage, IsValidDiscordCDNUrl } from './utils.js';
+import { CreateImg2ImgReponse, CreateText2ImgReponse, CreateRemixReponse } from './interaction_responses.js';
 
 const IMAGE_UPDATE_DELAY = 2000;
 let currentlyGenerating = false;
@@ -35,7 +36,7 @@ app.listen(PORT, () => {
 
 async function HandleInteraction(req, res)
 {
-    const { type, token, data } = req.body;
+    const { type, token, data, message, guild_id } = req.body;
 
     if (type === InteractionType.PING) {
         return res.send({ type: InteractionResponseType.PONG });
@@ -44,45 +45,63 @@ async function HandleInteraction(req, res)
     if (type === InteractionType.APPLICATION_COMMAND) {
         HandleCommand(token, data, res);
     }
+
+    if (type === InteractionType.MESSAGE_COMPONENT) {
+        HandleComponentInteraction(token, message, guild_id, data, res);
+    }
+}
+
+async function HandleComponentInteraction(token, message, guild_id, data, res)
+{
+    if (data["custom_id"] === "RemixButton") {
+        console.log(`Remixing image, Message ID = "${message["id"]}"`);
+        //finds the prompt from the message
+        const prompt = message["content"].match(/prompt: `(.*?)`/)[1];
+
+        Img2Img({prompt: prompt, url: message["embeds"][0]["image"]["url"]}).then(json => EndImageGeneration(json["images"][0], token));
+
+        currentlyGenerating = true;
+        UpdateImageLoop(token);
+        return res.send(CreateRemixReponse(guild_id, message["channel_id"], message["id"], prompt));
+    }
 }
 
 async function HandleCommand(token, data, res)
 {
-    const options = data["options"];
+    const options = ConvertOptionsToDict(data["options"]);
 
-    if (data["name"] === commands.CHANGEMODEL["name"])
-    {
-        SetModel(options[0]["value"]);
-        return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "> Model changed to `" + options[0]["value"] + "`"}});
+    if (data["name"] === commands.CHANGEMODEL["name"]) {
+        SetModel(options["model"]);
+        return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "> Model changed to `" + options["model"] + "`"}});
     }
 
     if (currentlyGenerating !== true) {
-        if (data["name"] === commands.TXT2IMG["name"])
-        {
-            console.log(`Generating image with prompt: "${options[0]["value"]}"`);
+        if (data["name"] === commands.TXT2IMG["name"]) {
+            console.log(`Generating image with prompt: "${options["prompt"]}"`);
             console.log(JSON.stringify(options));
-            Text2Img(options[0], options[1], options[2], options[3], options[4], options[5], options[6]).then(json => EndImageGeneration(json["images"][0], token));
+
+            Text2Img(options).then(json => EndImageGeneration(json["images"][0], token));
+
             currentlyGenerating = true;
             UpdateImageLoop(token);
-            return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "> Generating image with prompt: `" + options[0]["value"] + "`"}});
+            return res.send(CreateText2ImgReponse(options["prompt"]));
         }
 
-        if (data["name"] === commands.IMG2IMG["name"])
-        {
-            console.log(`Generating image (img2img) with prompt: "${options[0]["value"]}", URL "${options[1]["value"]}"`);
+        if (data["name"] === commands.IMG2IMG["name"]) {
+            console.log(`Generating image (img2img) with prompt: "${options["prompt"]}", URL "${options["url"]}"`);
             console.log(JSON.stringify(options));
 
-            const urlError = IsValidDiscordCDNUrl(options[1]["value"])
+            const urlError = IsValidDiscordCDNUrl(options["url"])
             if (urlError) {
                 res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: urlError, flags: InteractionResponseFlags.EPHEMERAL}})
                 return;
             }
 
-            Img2Img(options[0], options[1], options[2], options[3], options[4], options[5], options[6], options[7], options[8]).then(json => EndImageGeneration(json["images"][0], token));
+            Img2Img(options).then(json => EndImageGeneration(json["images"][0], token));
 
             currentlyGenerating = true;
             UpdateImageLoop(token);
-            return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: `Generating image (img2img) with prompt: \`${options[0]["value"]}\`, URL \`${options[1]["value"]}\``}});
+            return res.send(CreateImg2ImgReponse(options["prompt"], options["url"]));
         }
     }
     else {

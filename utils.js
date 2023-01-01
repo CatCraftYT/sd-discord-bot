@@ -91,3 +91,13 @@ export function IsValidDiscordCDNUrl(url)
     }
     return "";
 }
+
+export function ConvertOptionsToDict(options)
+{
+    let dict = {};
+    for (var i in options)
+    {
+        dict[options[i]["name"]] = options[i]["value"];
+    }
+    return dict;
+}
