@@ -22,7 +22,7 @@ export function CreateText2ImgReponse(options)
     return {
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-            content: `> Generating image with prompt: \`${options["prompt"]}\`}`,
+            content: `> Generating image with prompt: \`${options["prompt"]}\``,
             components: [{
                     type: MessageComponentTypes.ACTION_ROW,
                     components: [REMIX_BUTTON]
