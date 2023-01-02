@@ -17,12 +17,12 @@ const REMIX_BUTTON = {
     }
 }
 
-export function CreateText2ImgReponse(prompt)
+export function CreateText2ImgReponse(options)
 {
     return {
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-            content: `> Generating image with prompt: \`${prompt}\``,
+            content: `> Generating image with prompt: \`${options["prompt"]}\`}`,
             components: [{
                     type: MessageComponentTypes.ACTION_ROW,
                     components: [REMIX_BUTTON]
@@ -31,12 +31,12 @@ export function CreateText2ImgReponse(prompt)
     }
 }
 
-export function CreateImg2ImgReponse(prompt, url)
+export function CreateImg2ImgReponse(options)
 {
     return {
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-            content: `Generating image (img2img) with prompt: \`${prompt}\`, URL \`${url}\``,
+            content: `Generating image (img2img) with prompt: \`${options["prompt"]}\`, URL \`${options["url"]}\``,
             components: [{
                 type: MessageComponentTypes.ACTION_ROW,
                 components: [REMIX_BUTTON]

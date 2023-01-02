@@ -52,8 +52,10 @@ export async function GetProgress()
     .then(res => { return res.json() });
 }
 
-export async function Text2Img({prompt, neg_prompt, style, seed, sampler, steps, cfg_scale})
+export async function Text2Img({prompt, neg_prompt, style, aspect_ratio, seed, sampler, steps, cfg_scale})
 {
+    const {width, height} = GetWidthHeight(aspect_ratio);
+
     const json = {
         prompt:          prompt,
         negative_prompt: neg_prompt === undefined      ? "" : neg_prompt,
@@ -61,7 +63,9 @@ export async function Text2Img({prompt, neg_prompt, style, seed, sampler, steps,
         seed:            seed === undefined            ? -1 : seed,
         sampler_name:    sampler === undefined         ? "Euler a" : sampler,
         steps:           steps === undefined           ? 80 : steps,
-        cfg_scale:       cfg_scale === undefined       ? 7 : cfg_scale
+        cfg_scale:       cfg_scale === undefined       ? 7 : cfg_scale,
+        width: width,
+        height: height
     };
 
     return fetch_async("http://127.0.0.1:7860/sdapi/v1/txt2img", {
@@ -71,8 +75,9 @@ export async function Text2Img({prompt, neg_prompt, style, seed, sampler, steps,
     }).then(res => { return res.json() });
 }
 
-export async function Img2Img({prompt, url, neg_prompt, denoising_strength, style, seed, sampler, steps, cfg_scale})
+export async function Img2Img({prompt, url, neg_prompt, denoising_strength, style, aspect_ratio, seed, sampler, steps, cfg_scale})
 {
+    const {width, height} = GetWidthHeight(aspect_ratio);
     const image = Buffer.from(await (await fetch(url)).arrayBuffer()).toString("base64");
 
     const json = {
@@ -84,7 +89,9 @@ export async function Img2Img({prompt, url, neg_prompt, denoising_strength, styl
         seed:               seed === undefined               ? -1 : seed,
         sampler_name:       sampler === undefined            ? "Euler a" : sampler,
         steps:              steps === undefined              ? 80 : steps,
-        cfg_scale:          cfg_scale === undefined          ? 7 : cfg_scale
+        cfg_scale:          cfg_scale === undefined          ? 7 : cfg_scale,
+        width: width,
+        height: height
     };
 
     return fetch_async("http://127.0.0.1:7860/sdapi/v1/img2img", {
@@ -92,4 +99,19 @@ export async function Img2Img({prompt, url, neg_prompt, denoising_strength, styl
         body:    JSON.stringify(json),
         headers: { 'Content-Type': 'application/json' }
     }).then(res => { return res.json() });
+}
+
+function GetWidthHeight(aspect_ratio)
+{
+    var width;
+    var height;
+    if (aspect_ratio === "7:4") {
+        width = 896;
+        height = 512;
+    }
+    else {
+        width = 512;
+        height = 512;
+    }
+    return {width, height}
 }

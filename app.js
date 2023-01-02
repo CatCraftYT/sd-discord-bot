@@ -13,9 +13,16 @@ import { verifyKeyMiddleware } from 'discord-interactions';
 import * as commands from './command_defs.js';
 import { ConvertOptionsToDict, DiscordSendImage, IsValidDiscordCDNUrl } from './utils.js';
 import { CreateImg2ImgReponse, CreateText2ImgReponse, CreateRemixReponse } from './interaction_responses.js';
+import { StartGateway, StopGateway } from './gateway.js';
 
 const IMAGE_UPDATE_DELAY = 2000;
 let currentlyGenerating = false;
+
+process.on("SIGINT", () => {
+    StopGateway();
+    process.exit(0);
+});
+await StartGateway();
 
 // Create an express app
 const app = express();
@@ -77,18 +84,18 @@ async function HandleCommand(token, data, res)
 
     if (currentlyGenerating !== true) {
         if (data["name"] === commands.TXT2IMG["name"]) {
-            console.log(`Generating image with prompt: "${options["prompt"]}"`);
+            console.log(`Generating image with parameters: ${options}`);
             console.log(JSON.stringify(options));
 
             Text2Img(options).then(json => EndImageGeneration(json["images"][0], token));
 
             currentlyGenerating = true;
             UpdateImageLoop(token);
-            return res.send(CreateText2ImgReponse(options["prompt"]));
+            return res.send(CreateText2ImgReponse(options));
         }
 
         if (data["name"] === commands.IMG2IMG["name"]) {
-            console.log(`Generating image (img2img) with prompt: "${options["prompt"]}", URL "${options["url"]}"`);
+            console.log(`Generating image (img2img) with parameters: "${options}"`);
             console.log(JSON.stringify(options));
 
             const urlError = IsValidDiscordCDNUrl(options["url"])
@@ -101,7 +108,7 @@ async function HandleCommand(token, data, res)
 
             currentlyGenerating = true;
             UpdateImageLoop(token);
-            return res.send(CreateImg2ImgReponse(options["prompt"], options["url"]));
+            return res.send(CreateImg2ImgReponse(options));
         }
     }
     else {
@@ -129,7 +136,7 @@ async function UpdateImageLoop(token)
         console.log(`Generation progress: ${progress*100}%`);
         await UploadImageAttachment(token, json["current_image"]);
         
-        await new Promise(resolve => setTimeout(resolve, IMAGE_UPDATE_DELAY));;
+        await new Promise(resolve => setTimeout(resolve, IMAGE_UPDATE_DELAY));
     }
 }
 

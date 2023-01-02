@@ -2,6 +2,7 @@
 import { GetStyles, GetSamplers, GetModels } from './sd_api.js';
 
 // options MUST be the same as sd_api because of kwargs
+// option types: https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-type
 
 export const TXT2IMG = {
     name: "text2img",
@@ -24,6 +25,15 @@ export const TXT2IMG = {
             description: "Style to use.",
             type: 3,
             choices: GetStyles()
+        },
+        {
+            name: "aspect_ratio",
+            description: "Aspect ratio of generated image.",
+            type: 3,
+            choices: [
+                {"name": "1:1", "value": "1:1"},
+                {"name": "7:4 (near 16:9)", "value": "7:4"}
+            ]
         },
         {
             name: "seed",
@@ -88,6 +98,15 @@ export const IMG2IMG = {
             description: "Style to use.",
             type: 3,
             choices: GetStyles()
+        },
+        {
+            name: "aspect_ratio",
+            description: "Aspect ratio of generated image.",
+            type: 3,
+            choices: [
+                {"name": "1:1", "value": "1:1"},
+                {"name": "7:4 (near 16:9)", "value": "7:4"}
+            ]
         },
         {
             name: "seed",

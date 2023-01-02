@@ -19,7 +19,6 @@ async function HasGuildCommand(appId, guildId, command) {
 
     if (data) {
       const installedNames = data.map((c) => c['name']);
-      // This is just matching on the name, so it's not good for updates
       if (ALWAYS_REINSTALL || !installedNames.includes(command['name'])) {
         console.log(`Installing command "${command['name']}"`);
         InstallGuildCommand(appId, guildId, command);
