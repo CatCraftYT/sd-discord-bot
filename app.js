@@ -4,15 +4,13 @@ import {
   InteractionType,
   InteractionResponseType,
   InteractionResponseFlags,
-  MessageComponentTypes,
-  ButtonStyleTypes,
 } from 'discord-interactions';
 import { HasGuildCommands } from './commands_handler.js';
 import { Text2Img, Img2Img, SetModel, GetProgress, SendGenInterrupt } from './sd_api.js';
 import { verifyKeyMiddleware } from 'discord-interactions';
 import * as commands from './command_defs.js';
 import { ConvertOptionsToDict, DiscordRequest, DiscordSendImage, IsValidDiscordCDNUrl } from './utils.js';
-import { CreateImg2ImgReponse, CreateText2ImgReponse, CreateRemixReponse } from './interaction_responses.js';
+import { CreateImg2ImgReponse, CreateText2ImgReponse, CreateRemixReponse, CreateBusyResponse } from './interaction_responses.js';
 import { StartGateway, StopGateway } from './gateway.js';
 
 const IMAGE_UPDATE_DELAY = 2000;
@@ -39,7 +37,7 @@ app.listen(PORT, () => {
       commands.TXT2IMG,
       commands.IMG2IMG,
       commands.CHANGEMODEL,
-      commands.CANCELGENERATION
+      commands.CANCEL_GENERATION
     ]);
   });
 
@@ -62,22 +60,22 @@ async function HandleInteraction(req, res)
 
 async function HandleComponentInteraction(token, message, guild_id, data, res)
 {
-    if (data["custom_id"] === "RemixButton") {
-        try {
+    if (currentlyBusy !== true)
+    {
+        if (data["custom_id"] === "RemixButton") {
             console.log(`Remixing image, Message ID = "${message["id"]}"`);
             //finds the prompt from the message
             const prompt = message["content"].match(/prompt: `(.*?)`/)[1];
 
             Img2Img({prompt: prompt, url: message["embeds"][0]["image"]["url"]}).then(json => EndImageGeneration(json["images"][0], token));
-        }
-        catch (err) {
-            console.log(err);
-            return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "Remix failed. Please try again.", flags: InteractionResponseFlags.EPHEMERAL}});
-        }
 
-        currentlyBusy = true;
-        UpdateImageLoop(token);
-        return res.send(CreateRemixReponse(guild_id, message["channel_id"], message["id"], prompt));
+            currentlyBusy = true;
+            UpdateImageLoop(token);
+            return res.send(CreateRemixReponse(guild_id, message["channel_id"], message["id"], prompt));
+        }
+    }
+    else {
+        return res.send(CreateBusyResponse());
     }
 }
 
@@ -85,7 +83,7 @@ async function HandleCommand(token, data, res)
 {
     const options = ConvertOptionsToDict(data["options"]);
 
-    if (data["name"] === commands.CANCELGENERATION["name"]) {
+    if (data["name"] === commands.CANCEL_GENERATION["name"]) {
         console.log("Current generation canceled.");
         await DiscordRequest(`webhooks/${process.env.APP_ID}/${currentToken}/messages/@original`, {method: "DELETE"});
         await SendGenInterrupt();
@@ -116,17 +114,19 @@ async function HandleCommand(token, data, res)
 
         if (data["name"] === commands.TXT2IMG["name"]) {
             console.log(`Generating image with parameters: ${JSON.stringify(options)}`);
+			currentlyBusy = true;
+            currentToken = token;
 
             Text2Img(options).then(json => EndImageGeneration(json["images"][0], token));
 
-            currentlyBusy = true;
-            currentToken = token;
             UpdateImageLoop(token);
             return res.send(CreateText2ImgReponse(options));
         }
 
         if (data["name"] === commands.IMG2IMG["name"]) {
             console.log(`Generating image (img2img) with parameters: "${JSON.stringify(options)}"`);
+			currentlyBusy = true;
+            currentToken = token;
 
             const urlError = IsValidDiscordCDNUrl(options["url"])
             if (urlError) {
@@ -136,14 +136,12 @@ async function HandleCommand(token, data, res)
 
             Img2Img(options).then(json => EndImageGeneration(json["images"][0], token));
 
-            currentlyBusy = true;
-            currentToken = token;
             UpdateImageLoop(token);
             return res.send(CreateImg2ImgReponse(options));
         }
     }
     else {
-        return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "Another task is in progress - please wait until it is complete.", flags: InteractionResponseFlags.EPHEMERAL}});
+        return res.send(CreateBusyResponse());
     }
 }
 

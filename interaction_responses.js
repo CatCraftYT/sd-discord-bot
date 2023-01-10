@@ -1,5 +1,4 @@
 import {
-    InteractionType,
     InteractionResponseType,
     InteractionResponseFlags,
     MessageComponentTypes,
@@ -14,6 +13,17 @@ const REMIX_BUTTON = {
     emoji: {
         id: null,
         name: "♻️"
+    }
+}
+
+export function CreateBusyResponse()
+{
+    return {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+            content: "Another task is in progress - please wait until it is complete.",
+            flags: InteractionResponseFlags.EPHEMERAL
+        }
     }
 }
 

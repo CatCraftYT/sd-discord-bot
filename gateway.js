@@ -5,8 +5,8 @@ import fetch_async from 'node-fetch';
 
 const gatewayUrl = (await (await fetch_async("https://discord.com/api/v10/gateway")).json())["url"]
 var ws;
-let gatewayIsActive = true;
-let recievedACK = false;
+let gatewayIsActive = false;
+let recievedACK = true;
 var heartbeatInterval;
 let lastSequenceNumber = null;
 var session_id;
@@ -67,6 +67,7 @@ export async function StartGateway() {
         }
         else if (jsonData["op"] === 9) {
             ws.close(1000);
+            ws = undefined;
             StartGateway();
         }
     });

@@ -152,7 +152,7 @@ export const CHANGEMODEL = {
     ]
 };
 
-export const CANCELGENERATION = {
+export const CANCEL_GENERATION = {
     name: "cancel",
     type: 1,
     description: "Cancel the current generation and delete the message.",

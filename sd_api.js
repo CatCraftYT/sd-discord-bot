@@ -29,14 +29,6 @@ export function GetModels()
     return GetInfo("http://127.0.0.1:7860/sdapi/v1/sd-models", "title");
 }
 
-//this function will only work if the 768 in the model name is surrounded by dashes or spaces
-export function ModelIs768()
-{
-    const regex = /(?<!\()\b768\b(?![\w\s]*[\)])/g; // i dunno how this fuckin works lol
-    let json = fetch_sync(url).json();
-    return regex.test(json["sd_model_checkpoint"]);
-}
-
 export async function SetModel(model)
 {
     return fetch_async("http://127.0.0.1:7860/sdapi/v1/options", {
@@ -54,7 +46,7 @@ export async function GetProgress()
 
 export async function Text2Img({prompt, neg_prompt, style, aspect_ratio, seed, sampler, steps, cfg_scale})
 {
-    const {width, height} = GetWidthHeight(aspect_ratio);
+    const {width, height} = await GetWidthHeight(aspect_ratio);
 
     const json = {
         prompt:          prompt,
@@ -77,7 +69,7 @@ export async function Text2Img({prompt, neg_prompt, style, aspect_ratio, seed, s
 
 export async function Img2Img({prompt, url, neg_prompt, denoising_strength, style, aspect_ratio, seed, sampler, steps, cfg_scale})
 {
-    const {width, height} = GetWidthHeight(aspect_ratio);
+    const {width, height} = await GetWidthHeight(aspect_ratio);
     const image = Buffer.from(await (await fetch(url)).arrayBuffer()).toString("base64");
 
     const json = {
@@ -108,17 +100,22 @@ export async function SendGenInterrupt()
     });
 }
 
-function GetWidthHeight(aspect_ratio)
+//this function will only work if the 768 in the model name is surrounded by dashes or spaces
+async function GetOutputSize()
 {
-    var width;
-    var height;
+    const regex = /(?<!\()\b768\b(?![\w\s]*[\)])/g; // i dunno how this fuckin works lol
+    let json = await (await fetch_async("http://127.0.0.1:7860/sdapi/v1/options")).json()
+    return regex.test(json["sd_model_checkpoint"]) ? 768 : 512;
+}
+
+async function GetWidthHeight(aspect_ratio)
+{
+    const size = await GetOutputSize();
+    var width = size;
+    var height = size;
+
     if (aspect_ratio === "7:4") {
-        width = 896;
-        height = 512;
-    }
-    else {
-        width = 512;
-        height = 512;
+        width *= 1.75;
     }
     return {width, height}
 }
