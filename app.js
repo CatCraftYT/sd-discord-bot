@@ -90,13 +90,18 @@ async function HandleCommand(token, data, res)
     const options = optionData[1];
 
     if (name[0] === commands.CANCEL_GENERATION["name"]) {
-        console.log("Current generation canceled.");
-        await DiscordRequest(`webhooks/${process.env.APP_ID}/${currentToken}/messages/@original`, {method: "DELETE"});
-        await SendGenInterrupt();
-        currentToken = null;
-        currentlyBusy = false;
-
-        return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "> Current generation canceled."}});
+        if (currentToken !== null) {
+            console.log("Current generation canceled.");
+            await DiscordRequest(`webhooks/${process.env.APP_ID}/${currentToken}/messages/@original`, {method: "DELETE"});
+            await SendGenInterrupt();
+            currentToken = null;
+            currentlyBusy = false;
+    
+            return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "> Current generation canceled."}});
+        }
+        else {
+            res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "No ongoing generation to cancel.", flags: InteractionResponseFlags.EPHEMERAL}})
+        }
     }
 
     if (currentlyBusy !== true) {
@@ -104,11 +109,9 @@ async function HandleCommand(token, data, res)
             if (name[1] === commands.CHANGEMODEL["options"][0]["name"]) {
                 console.log(`Changing model to ${options["model"]}`);
                 currentlyBusy = true;
-                currentToken = token;
                 SetModel(options["model"]).then(() => {
-                    DiscordRequest(`webhooks/${process.env.APP_ID}/${currentToken}`, {method: "POST", body: {content: "Model changed."}});
+                    DiscordRequest(`webhooks/${process.env.APP_ID}/${token}`, {method: "POST", body: {content: "Model changed."}});
                     currentlyBusy = false;
-                    currentToken = null;
                 });
         
                 return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: `> Changing model to \`${options["model"]}\``}});
