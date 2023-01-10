@@ -16,6 +16,17 @@ const REMIX_BUTTON = {
     }
 }
 
+const UPSCALE_BUTTON = {
+    type: MessageComponentTypes.BUTTON,
+    label: "Upscale",
+    style: ButtonStyleTypes.SECONDARY,
+    custom_id: "UpscaleButton",
+    emoji: {
+        id: null,
+        name: "⏫"
+    }
+}
+
 export function CreateBusyResponse()
 {
     return {
@@ -35,7 +46,7 @@ export function CreateText2ImgReponse(options)
             content: `> Generating image with prompt: \`${options["prompt"]}\`, seed: \`${options["seed"]}\``,
             components: [{
                     type: MessageComponentTypes.ACTION_ROW,
-                    components: [REMIX_BUTTON]
+                    components: [REMIX_BUTTON, UPSCALE_BUTTON]
                 }]
         }
     }
@@ -49,7 +60,7 @@ export function CreateImg2ImgReponse(options)
             content: `Generating image (img2img) with prompt: \`${options["prompt"]}\`, seed: \`${options["seed"]}\`, URL \`${options["url"]}\``,
             components: [{
                 type: MessageComponentTypes.ACTION_ROW,
-                components: [REMIX_BUTTON]
+                components: [REMIX_BUTTON, UPSCALE_BUTTON]
             }]
         }
     }
@@ -66,6 +77,16 @@ With prompt: \`${prompt}\``,
                 type: MessageComponentTypes.ACTION_ROW,
                 components: [REMIX_BUTTON]
             }]
+        }
+    }
+}
+
+export function CreateUpscaleReponse(guildID, channelID, messageID)
+{
+    return {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+            content: `Creating 2x upscale image of generation: https://discord.com/channels/${guildID}/${channelID}/${messageID}`
         }
     }
 }

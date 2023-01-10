@@ -6,11 +6,11 @@ import {
   InteractionResponseFlags,
 } from 'discord-interactions';
 import { HasGuildCommands } from './commands_handler.js';
-import { Text2Img, Img2Img, SetModel, GetProgress, SendGenInterrupt } from './sd_api.js';
+import { Text2Img, Img2Img, SetModel, GetProgress, SendGenInterrupt, Upscale } from './sd_api.js';
 import { verifyKeyMiddleware } from 'discord-interactions';
 import * as commands from './command_defs.js';
 import { ConvertOptionsToDict, DiscordRequest, DiscordSendImage, IsValidDiscordCDNUrl } from './utils.js';
-import { CreateImg2ImgReponse, CreateText2ImgReponse, CreateRemixReponse, CreateBusyResponse } from './interaction_responses.js';
+import { CreateImg2ImgReponse, CreateText2ImgReponse, CreateRemixReponse, CreateBusyResponse, CreateUpscaleReponse } from './interaction_responses.js';
 import { StartGateway, StopGateway } from './gateway.js';
 
 const IMAGE_UPDATE_DELAY = 2000;
@@ -72,6 +72,15 @@ async function HandleComponentInteraction(token, message, guild_id, data, res)
             currentlyBusy = true;
             UpdateImageLoop(token);
             return res.send(CreateRemixReponse(guild_id, message["channel_id"], message["id"], prompt));
+        }
+
+        if (data["custom_id"] === "UpscaleButton") {
+            console.log(`Upscaling image, Message ID = "${message["id"]}"`);
+
+            Upscale(message["embeds"][0]["image"]["url"]).then(json => { UploadImageAttachment(token, json["image"]); currentlyBusy = false });
+
+            currentlyBusy = true;
+            return res.send(CreateUpscaleReponse(guild_id, message["channel_id"], message["id"]));
         }
     }
     else {

@@ -93,6 +93,23 @@ export async function Img2Img({prompt, url, neg_prompt, denoising_strength, styl
     }).then(res => { return res.json() });
 }
 
+export async function Upscale(url)
+{
+    const image = Buffer.from(await (await fetch(url)).arrayBuffer()).toString("base64");
+
+    const json = {
+        upscaling_resize: 2,
+        upscaler_1: "SwinIR_4x", // for now this will just always be SwinIR, there could be an option to change in the future
+        image: image
+      }
+
+    return fetch_async("http://127.0.0.1:7860/sdapi/v1/extra-single-image", {
+        method: 'post',
+        body:    JSON.stringify(json),
+        headers: { 'Content-Type': 'application/json' }
+    }).then(res => { return res.json() });
+}
+
 export async function SendGenInterrupt()
 {
     return fetch_async("http://127.0.0.1:7860/sdapi/v1/interrupt", {
