@@ -6,59 +6,67 @@ import fetch_async from 'node-fetch';
 const gatewayUrl = (await (await fetch_async("https://discord.com/api/v10/gateway")).json())["url"]
 var ws;
 let gatewayIsActive = false;
-let recievedACK = true;
+let recievedACK = false;
 var heartbeatInterval;
 let lastSequenceNumber = null;
 var session_id;
 var resume_gateway_url;
 
 export async function StartGateway() {
-    ws = new WebSocket(gatewayUrl);
+    if (ws === undefined) { ws = new WebSocket(gatewayUrl); }
     ws.on("close", (code) => {
-        if (code === 1000) { return; }
+        if (code === 1000 || code === 4200) { return; }
         console.log(`Gateway connection closed (code ${code}). Attempting reconnect.`);
         ResumeGatewayConnection();
     });
     ws.on("message", (data) => {
         let jsonData = JSON.parse(data);
+        //console.log(jsonData);
         console.log(`Recieved data from Gateway, opcode: ${jsonData["op"]}`)
         if (jsonData["op"] === 11) {
             recievedACK = true;
         }
         else if (jsonData["op"] === 0) {
             lastSequenceNumber = jsonData["s"];
+            //ready event
+            if (jsonData["t"] === "READY") {
+                ({ session_id, resume_gateway_url } = jsonData["d"]);
+                console.log(`Gateway is ready. Session ID: ${session_id}, Resume URL: ${resume_gateway_url}`);
+            }
+            if (jsonData["t"] === "RESUMED") {
+                console.log("Gateway connection successfully resumed.");
+                recievedACK = true;
+            }
         }
         else if (jsonData["op"] === 1) {
             SendHeartbeat();
         }
-        // ready event
-        else if ("session_id" in jsonData) {
-            ({ session_id, resume_gateway_url } = jsonData);
-        }
         else if (jsonData["op"] === 10) {
             heartbeatInterval = jsonData["d"]["heartbeat_interval"];
-            gatewayIsActive = true;
             console.log(`Gateway connection established. Heartbeat interval = ${heartbeatInterval}ms`);
-            GatewayLoop();
-            // send identify payload
-            ws.send(JSON.stringify({
-                op: 2,
-                d: {
-                    token: process.env.DISCORD_TOKEN,
-                    intents: 0,
-                    properties: {
-                        os: "windows",
-                        browser: "sd_bot",
-                        device: "sd_bot"
+            // send identify payload if gateway is activated for the first time
+            if (!gatewayIsActive) {
+                ws.send(JSON.stringify({
+                    op: 2,
+                    d: {
+                        token: process.env.DISCORD_TOKEN,
+                        intents: 0,
+                        properties: {
+                            os: "windows",
+                            browser: "sd_bot",
+                            device: "sd_bot"
+                        }
                     }
-                }
-            }));
+                }));
+            }
+            gatewayIsActive = true;
+            GatewayLoop();
         }
         else if (jsonData["op"] === 7) {
             ResumeGatewayConnection();
         }
         else if (jsonData["op"] === 9) {
-            ws.close();
+            ws.close(1000);
             StartGateway();
         }
     });
@@ -66,6 +74,7 @@ export async function StartGateway() {
 
 export async function StopGateway() {
     ws.close(1000);
+    ws = undefined;
     gatewayIsActive = false;
 }
 
@@ -90,14 +99,17 @@ function SendHeartbeat() {
 }
 
 function ResumeGatewayConnection() {
+	ws.close(4200);
     ws = new WebSocket(resume_gateway_url);
     // send resume payload
-    ws.send(JSON.stringify({
-        op: 6,
-        d: {
-            token: process.env.DISCORD_TOKEN,
-            session_id: session_id,
-            seq: lastSequenceNumber.toString()
-        }
-    }));
+    ws.on("open", () =>
+        ws.send(JSON.stringify({
+            op: 6,
+            d: {
+                token: process.env.DISCORD_TOKEN,
+                session_id: session_id,
+                seq: lastSequenceNumber.toString()
+            }}))
+    );
+    StartGateway();
 }

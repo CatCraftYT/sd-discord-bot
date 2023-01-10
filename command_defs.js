@@ -89,7 +89,7 @@ export const IMG2IMG = {
         {
             name: "denoising_strength",
             description: "[0-1] The denoising strength. The higher this is, the less SD will adhere to the input image.",
-            type: 4,
+            type: 10,
             min_value: 0,
             max_value: 1
         },
@@ -150,4 +150,10 @@ export const CHANGEMODEL = {
             choices: GetModels()
         },
     ]
+};
+
+export const CANCELGENERATION = {
+    name: "cancel",
+    type: 1,
+    description: "Cancel the current generation and delete the message.",
 };

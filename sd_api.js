@@ -39,7 +39,7 @@ export function ModelIs768()
 
 export async function SetModel(model)
 {
-    fetch_async("http://127.0.0.1:7860/sdapi/v1/options", {
+    return fetch_async("http://127.0.0.1:7860/sdapi/v1/options", {
         method: 'post',
         body:    JSON.stringify({ sd_model_checkpoint: model }),
         headers: { 'Content-Type': 'application/json' }
@@ -58,7 +58,7 @@ export async function Text2Img({prompt, neg_prompt, style, aspect_ratio, seed, s
 
     const json = {
         prompt:          prompt,
-        negative_prompt: neg_prompt === undefined      ? "" : neg_prompt,
+        negative_prompt: neg_prompt === undefined      ? "nsfw" : neg_prompt + ", nsfw",
         styles:          [style === undefined          ? "None" : style],
         seed:            seed === undefined            ? -1 : seed,
         sampler_name:    sampler === undefined         ? "Euler a" : sampler,
@@ -84,7 +84,7 @@ export async function Img2Img({prompt, url, neg_prompt, denoising_strength, styl
         init_images:        [image],
         prompt:             prompt,
         denoising_strength: denoising_strength === undefined ? 0.65 : denoising_strength,
-        negative_prompt:    neg_prompt === undefined         ? "" : neg_prompt,
+        negative_prompt:    neg_prompt === undefined         ? "nsfw" : neg_prompt + ", nsfw",
         styles:             [style === undefined             ? "None" : style],
         seed:               seed === undefined               ? -1 : seed,
         sampler_name:       sampler === undefined            ? "Euler a" : sampler,
@@ -99,6 +99,13 @@ export async function Img2Img({prompt, url, neg_prompt, denoising_strength, styl
         body:    JSON.stringify(json),
         headers: { 'Content-Type': 'application/json' }
     }).then(res => { return res.json() });
+}
+
+export async function SendGenInterrupt()
+{
+    return fetch_async("http://127.0.0.1:7860/sdapi/v1/interrupt", {
+        method: 'post',
+    });
 }
 
 function GetWidthHeight(aspect_ratio)
