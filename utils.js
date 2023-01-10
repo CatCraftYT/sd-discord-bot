@@ -72,8 +72,7 @@ Content-Type: image/png
 
     if (!response.ok) {
         const data = await response.json();
-        console.log(response.status);
-        throw new Error(JSON.stringify(data));
+        console.warn(`HTTP Error in DiscordSendImage (res code ${response.status}): ${JSON.stringify(data)}`);
     }
     return response;
 }
@@ -92,12 +91,18 @@ export function IsValidDiscordCDNUrl(url)
     return "";
 }
 
-export function ConvertOptionsToDict(options)
+export function FormatOptions(data, name = [])
 {
+    name.push(data["name"]);
+
     let dict = {};
-    for (var i in options)
-    {
+    const options = data["options"];
+    if (options && options[0]["type"] === 1) {
+        return FormatOptions(options[0], name);
+    }
+    
+    for (var i in options) {
         dict[options[i]["name"]] = options[i]["value"];
     }
-    return dict;
+    return [name, dict];
 }

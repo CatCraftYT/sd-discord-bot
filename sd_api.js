@@ -40,8 +40,14 @@ export async function SetModel(model)
 
 export async function GetProgress()
 {
-    return fetch_async("http://127.0.0.1:7860/sdapi/v1/progress")
-    .then(res => { return res.json() });
+    return fetch_async("http://127.0.0.1:7860/sdapi/v1/progress").then(res => res.json());
+}
+
+export async function GetCurrentModel()
+{
+    return fetch_async("http://127.0.0.1:7860/sdapi/v1/options")
+    .then(res => res.json())
+    .then(json => json["sd_model_checkpoint"]);
 }
 
 export async function Text2Img({prompt, neg_prompt, style, aspect_ratio, seed, sampler, steps, cfg_scale})
@@ -121,8 +127,8 @@ export async function SendGenInterrupt()
 async function GetOutputSize()
 {
     const regex = /(?<!\()\b768\b(?![\w\s]*[\)])/g; // i dunno how this fuckin works lol
-    let json = await (await fetch_async("http://127.0.0.1:7860/sdapi/v1/options")).json()
-    return regex.test(json["sd_model_checkpoint"]) ? 768 : 512;
+    let model = await GetCurrentModel();
+    return regex.test(model) ? 768 : 512;
 }
 
 async function GetWidthHeight(aspect_ratio)

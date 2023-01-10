@@ -6,10 +6,10 @@ import {
   InteractionResponseFlags,
 } from 'discord-interactions';
 import { HasGuildCommands } from './commands_handler.js';
-import { Text2Img, Img2Img, SetModel, GetProgress, SendGenInterrupt, Upscale } from './sd_api.js';
+import { Text2Img, Img2Img, SetModel, GetProgress, SendGenInterrupt, Upscale, GetCurrentModel } from './sd_api.js';
 import { verifyKeyMiddleware } from 'discord-interactions';
 import * as commands from './command_defs.js';
-import { ConvertOptionsToDict, DiscordRequest, DiscordSendImage, IsValidDiscordCDNUrl } from './utils.js';
+import { FormatOptions, DiscordRequest, DiscordSendImage, IsValidDiscordCDNUrl } from './utils.js';
 import { CreateImg2ImgReponse, CreateText2ImgReponse, CreateRemixReponse, CreateBusyResponse, CreateUpscaleReponse } from './interaction_responses.js';
 import { StartGateway, StopGateway } from './gateway.js';
 
@@ -33,12 +33,7 @@ app.use(verifyKeyMiddleware(process.env.PUBLIC_KEY));
 app.post('/', HandleInteraction)
 app.listen(PORT, () => {
     // Check if guild commands from commands.js are installed (if not, install them)
-    HasGuildCommands(process.env.APP_ID, process.env.GUILD_ID, [
-      commands.TXT2IMG,
-      commands.IMG2IMG,
-      commands.CHANGEMODEL,
-      commands.CANCEL_GENERATION
-    ]);
+    HasGuildCommands(process.env.APP_ID, process.env.GUILD_ID, commands.commands);
   });
 
 async function HandleInteraction(req, res)
@@ -90,9 +85,11 @@ async function HandleComponentInteraction(token, message, guild_id, data, res)
 
 async function HandleCommand(token, data, res)
 {
-    const options = ConvertOptionsToDict(data["options"]);
+    const optionData = FormatOptions(data);
+    const name = optionData[0];
+    const options = optionData[1];
 
-    if (data["name"] === commands.CANCEL_GENERATION["name"]) {
+    if (name[0] === commands.CANCEL_GENERATION["name"]) {
         console.log("Current generation canceled.");
         await DiscordRequest(`webhooks/${process.env.APP_ID}/${currentToken}/messages/@original`, {method: "DELETE"});
         await SendGenInterrupt();
@@ -103,17 +100,22 @@ async function HandleCommand(token, data, res)
     }
 
     if (currentlyBusy !== true) {
-        if (data["name"] === commands.CHANGEMODEL["name"]) {
-            console.log(`Changing model to ${options["model"]}`);
-            currentlyBusy = true;
-            currentToken = token;
-            SetModel(options["model"]).then(() => {
-                DiscordRequest(`webhooks/${process.env.APP_ID}/${currentToken}`, {method: "POST", body: {content: "Model changed."}});
-                currentlyBusy = false;
-                currentToken = null;
-            });
-    
-            return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "> Changing model to `" + options["model"] + "`"}});
+        if (name[0] === commands.CHANGEMODEL["name"]) {
+            if (name[1] === commands.CHANGEMODEL["options"][0]["name"]) {
+                console.log(`Changing model to ${options["model"]}`);
+                currentlyBusy = true;
+                currentToken = token;
+                SetModel(options["model"]).then(() => {
+                    DiscordRequest(`webhooks/${process.env.APP_ID}/${currentToken}`, {method: "POST", body: {content: "Model changed."}});
+                    currentlyBusy = false;
+                    currentToken = null;
+                });
+        
+                return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: `> Changing model to \`${options["model"]}\``}});
+            }
+            if (name[1] === commands.CHANGEMODEL["options"][1]["name"]) {
+                return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: `> Current model is \`${await GetCurrentModel()}\``}});
+            }
         }
 
         // change seed to known value so we can put it into the message
@@ -121,7 +123,7 @@ async function HandleCommand(token, data, res)
             options["seed"] = Math.floor(Number.MAX_SAFE_INTEGER * Math.random())
         }
 
-        if (data["name"] === commands.TXT2IMG["name"]) {
+        if (name[0] === commands.TXT2IMG["name"]) {
             console.log(`Generating image with parameters: ${JSON.stringify(options)}`);
 			currentlyBusy = true;
             currentToken = token;
@@ -132,7 +134,7 @@ async function HandleCommand(token, data, res)
             return res.send(CreateText2ImgReponse(options));
         }
 
-        if (data["name"] === commands.IMG2IMG["name"]) {
+        if (name[0] === commands.IMG2IMG["name"]) {
             console.log(`Generating image (img2img) with parameters: "${JSON.stringify(options)}"`);
 			currentlyBusy = true;
             currentToken = token;

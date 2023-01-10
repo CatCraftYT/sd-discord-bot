@@ -2,6 +2,7 @@
 import { GetStyles, GetSamplers, GetModels } from './sd_api.js';
 
 // options MUST be the same as sd_api because of kwargs
+// ***remember to add any new commands to list at the bottom***
 // option types: https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-type
 
 export const TXT2IMG = {
@@ -140,14 +141,24 @@ export const IMG2IMG = {
 export const CHANGEMODEL = {
     name: "model",
     type: 1,
-    description: "Change the current model.",
+    description: "Change/query the current model.",
     options: [
         {
-            name: "model",
-            description: "Model to change to.",
-            type: 3,
-            required: true,
-            choices: GetModels()
+            name: "change",
+            description: "Change the current model.",
+            type: 1,
+            options: [{
+                name: "model",
+                description: "Model to change to.",
+                type: 3,
+                required: true,
+                choices: GetModels()
+            }]
+        },
+        {
+            name: "query",
+            description: "Query the current model.",
+            type: 1,
         },
     ]
 };
@@ -157,3 +168,5 @@ export const CANCEL_GENERATION = {
     type: 1,
     description: "Cancel the current generation and delete the message.",
 };
+
+export const commands = [TXT2IMG, IMG2IMG, CHANGEMODEL, CANCEL_GENERATION];
