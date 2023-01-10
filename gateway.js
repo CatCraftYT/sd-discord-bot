@@ -5,7 +5,7 @@ import fetch_async from 'node-fetch';
 
 const gatewayUrl = (await (await fetch_async("https://discord.com/api/v10/gateway")).json())["url"]
 var ws;
-let gatewayIsActive = false;
+let gatewayIsActive = true;
 let recievedACK = false;
 var heartbeatInterval;
 let lastSequenceNumber = null;
