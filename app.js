@@ -65,6 +65,7 @@ async function HandleComponentInteraction(token, message, guild_id, data, res)
             Img2Img({prompt: prompt, url: message["embeds"][0]["image"]["url"]}).then(json => EndImageGeneration(json["images"][0], token));
 
             currentlyBusy = true;
+            currentToken = token;
             UpdateImageLoop(token);
             return res.send(CreateRemixReponse(guild_id, message["channel_id"], message["id"], prompt));
         }

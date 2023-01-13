@@ -6,6 +6,7 @@ import fetch_async from 'node-fetch';
 const gatewayUrl = (await (await fetch_async("https://discord.com/api/v10/gateway")).json())["url"]
 var ws;
 let gatewayIsActive = false;
+let resuming = false;
 let recievedACK = true;
 var heartbeatInterval;
 let lastSequenceNumber = null;
@@ -32,10 +33,15 @@ export async function StartGateway() {
             if (jsonData["t"] === "READY") {
                 ({ session_id, resume_gateway_url } = jsonData["d"]);
                 console.log(`Gateway is ready. Session ID: ${session_id}, Resume URL: ${resume_gateway_url}`);
+                gatewayIsActive = true;
+				GatewayLoop();
             }
             if (jsonData["t"] === "RESUMED") {
                 console.log("Gateway connection successfully resumed.");
                 recievedACK = true;
+                resuming = false;
+                gatewayIsActive = true;
+				GatewayLoop();
             }
         }
         else if (jsonData["op"] === 1) {
@@ -45,7 +51,7 @@ export async function StartGateway() {
             heartbeatInterval = jsonData["d"]["heartbeat_interval"];
             console.log(`Gateway connection established. Heartbeat interval = ${heartbeatInterval}ms`);
             // send identify payload if gateway is activated for the first time
-            if (!gatewayIsActive) {
+            if (!resuming) {
                 ws.send(JSON.stringify({
                     op: 2,
                     d: {
@@ -59,8 +65,6 @@ export async function StartGateway() {
                     }
                 }));
             }
-            gatewayIsActive = true;
-            GatewayLoop();
         }
         else if (jsonData["op"] === 7) {
             ResumeGatewayConnection();
@@ -100,6 +104,8 @@ function SendHeartbeat() {
 }
 
 function ResumeGatewayConnection() {
+    resuming = true;
+    gatewayIsActive = false;
 	ws.close(4200);
     ws = new WebSocket(resume_gateway_url);
     // send resume payload

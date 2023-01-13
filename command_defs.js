@@ -1,6 +1,22 @@
 
 import { GetStyles, GetSamplers, GetModels } from './sd_api.js';
 
+// this stuff will execute first so the webui waiting needs to be here
+console.log("Don't forget to add interaction endpoint in discord application! (https://discord.com/developers/applications)")
+console.log("Waiting for webui api...");
+while (true)
+{
+    try {
+        await GetStyles();
+    }
+    catch {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        continue;
+    }
+    break;
+}
+console.log("Webui response recieved.");
+
 // options MUST be the same as sd_api because of kwargs
 // ***remember to add any new commands to list at the bottom***
 // option types: https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-type
