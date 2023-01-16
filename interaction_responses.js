@@ -75,7 +75,7 @@ export function CreateRemixReponse(guildID, channelID, messageID, prompt)
 With prompt: \`${prompt}\``,
             components: [{
                 type: MessageComponentTypes.ACTION_ROW,
-                components: [REMIX_BUTTON]
+                components: [REMIX_BUTTON, UPSCALE_BUTTON]
             }]
         }
     }
