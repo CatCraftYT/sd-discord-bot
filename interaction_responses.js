@@ -16,6 +16,17 @@ const REMIX_BUTTON = {
     }
 }
 
+const REGEN_BUTTON = {
+    type: MessageComponentTypes.BUTTON,
+    label: "Regenerate",
+    style: ButtonStyleTypes.SECONDARY,
+    custom_id: "RegenButton",
+    emoji: {
+        id: null,
+        name: "🔁"
+    }
+}
+
 const UPSCALE_BUTTON = {
     type: MessageComponentTypes.BUTTON,
     label: "Upscale",
@@ -46,7 +57,7 @@ export function CreateText2ImgReponse(options)
             content: `> Generating image with prompt: \`${options["prompt"]}\`, seed: \`${options["seed"]}\``,
             components: [{
                     type: MessageComponentTypes.ACTION_ROW,
-                    components: [REMIX_BUTTON, UPSCALE_BUTTON]
+                    components: [REMIX_BUTTON, REGEN_BUTTON, UPSCALE_BUTTON]
                 }]
         }
     }
@@ -60,22 +71,21 @@ export function CreateImg2ImgReponse(options)
             content: `Generating image (img2img) with prompt: \`${options["prompt"]}\`, seed: \`${options["seed"]}\`, URL \`${options["url"]}\``,
             components: [{
                 type: MessageComponentTypes.ACTION_ROW,
-                components: [REMIX_BUTTON, UPSCALE_BUTTON]
+                components: [REMIX_BUTTON, REGEN_BUTTON, UPSCALE_BUTTON]
             }]
         }
     }
 }
 
-export function CreateRemixReponse(guildID, channelID, messageID, prompt)
+export function CreateRemixReponse(guildID, channelID, messageID)
 {
     return {
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-            content: `Creating remix image of generation: https://discord.com/channels/${guildID}/${channelID}/${messageID}
-With prompt: \`${prompt}\``,
+            content: `Creating remix image of generation: https://discord.com/channels/${guildID}/${channelID}/${messageID}`,
             components: [{
                 type: MessageComponentTypes.ACTION_ROW,
-                components: [REMIX_BUTTON, UPSCALE_BUTTON]
+                components: [REMIX_BUTTON, REGEN_BUTTON, UPSCALE_BUTTON]
             }]
         }
     }

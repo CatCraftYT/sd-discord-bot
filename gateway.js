@@ -13,6 +13,8 @@ let lastSequenceNumber = null;
 var session_id;
 var resume_gateway_url;
 
+
+// opcodes: https://discord.com/developers/docs/topics/opcodes-and-status-codes
 export async function StartGateway() {
     if (ws === undefined) { ws = new WebSocket(gatewayUrl); }
     ws.on("close", (code) => {

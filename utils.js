@@ -28,8 +28,10 @@ export async function DiscordRequest(endpoint, options) {
     return res;
 }
 
-export async function DiscordSendImage(endpoint, image)
+// filename needs to be alphanumeric + dots and underscores (**without extension**)
+export async function DiscordSendImage(endpoint, image, filename)
 {
+    console.log(filename);
     const boundary = "bMfzKPBnqw8jvzPzXmfBDxZ9aQ4Jd4Df3QQWg4nuFwnG4nC2BT";
     const body = `
 --${boundary}
@@ -39,17 +41,17 @@ Content-Type: application/json
 {
     "embeds": [{
         "image": {
-            "url": "attachment://generated_file.png"
+            "url": "attachment://${filename}.png"
         }
     }],
 
     "attachments": [{
         "id": 0,
-        "filename": "generated_file.png"
+        "filename": "${filename}.png"
     }]
 }
 --${boundary}
-Content-Disposition: form-data; name="files[0]"; filename="generated_file.png"
+Content-Disposition: form-data; name="files[0]"; filename="${filename}.png"
 Content-Type: image/png
 
 `;
