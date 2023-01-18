@@ -47,22 +47,22 @@ async function HandleInteraction(req, res)
 
     console.log(`Recieved interaction from member: "${member["user"]["username"]}" (${member["user"]["id"]})`);
     if (type === InteractionType.APPLICATION_COMMAND) {
-        HandleCommand(token, data, res);
+        HandleCommand(token, data, member, res);
     }
 
     if (type === InteractionType.MESSAGE_COMPONENT) {
-        HandleComponentInteraction(token, message, guild_id, data, res);
+        HandleComponentInteraction(token, message, guild_id, data, member, res);
     }
 }
 
-async function HandleComponentInteraction(token, message, guild_id, data, res)
+async function HandleComponentInteraction(token, message, guild_id, data, member, res)
 {
     if (currentlyBusy !== true)
     {
         // get the filename, remove the extension with regex, then decode from base64url
         const url = message["embeds"][0]["image"]["url"];
         const oldGenId = url.substr(url.lastIndexOf("/") + 1).replace(/\.\w+$/g, "");
-        const options = JSON.parse(await csv.ReadEntry(oldGenId));
+        const options = {...JSON.parse(await csv.ReadEntry(oldGenId)), member: member["user"]["id"]};
         if (options === null) {
             return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "This feature is unavailable for this generation.", flags: InteractionResponseFlags.EPHEMERAL}})
         }
@@ -126,11 +126,11 @@ async function HandleComponentInteraction(token, message, guild_id, data, res)
     }
 }
 
-async function HandleCommand(token, data, res)
+async function HandleCommand(token, data, member, res)
 {
     const optionData = FormatOptions(data);
     const name = optionData[0];
-    const options = {...optionData[1], interaction_token: token};
+    const options = {...optionData[1], interaction_token: token, member: member["user"]["id"]};
 
     if (name[0] === commands.CANCEL_GENERATION["name"]) {
         if (currentToken !== null) {
