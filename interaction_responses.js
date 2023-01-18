@@ -97,10 +97,6 @@ export function CreateRegenReponse(guildID, channelID, messageID)
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
             content: `Re-generating generation: https://discord.com/channels/${guildID}/${channelID}/${messageID}`,
-            components: [{
-                type: MessageComponentTypes.ACTION_ROW,
-                components: [REMIX_BUTTON, REGEN_BUTTON, UPSCALE_BUTTON]
-            }]
         }
     }
 }
