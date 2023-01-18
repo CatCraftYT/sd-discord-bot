@@ -91,6 +91,20 @@ export function CreateRemixReponse(guildID, channelID, messageID)
     }
 }
 
+export function CreateRegenReponse(guildID, channelID, messageID)
+{
+    return {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+            content: `Re-generating generation: https://discord.com/channels/${guildID}/${channelID}/${messageID}`,
+            components: [{
+                type: MessageComponentTypes.ACTION_ROW,
+                components: [REMIX_BUTTON, REGEN_BUTTON, UPSCALE_BUTTON]
+            }]
+        }
+    }
+}
+
 export function CreateUpscaleReponse(guildID, channelID, messageID)
 {
     return {

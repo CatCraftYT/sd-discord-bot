@@ -31,7 +31,6 @@ export async function DiscordRequest(endpoint, options) {
 // filename needs to be alphanumeric + dots and underscores (**without extension**)
 export async function DiscordSendImage(endpoint, image, filename)
 {
-    console.log(filename);
     const boundary = "bMfzKPBnqw8jvzPzXmfBDxZ9aQ4Jd4Df3QQWg4nuFwnG4nC2BT";
     const body = `
 --${boundary}

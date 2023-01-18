@@ -10,9 +10,9 @@ import { Text2Img, Img2Img, SetModel, GetProgress, SendGenInterrupt, Upscale, Ge
 import { verifyKeyMiddleware } from 'discord-interactions';
 import * as commands from './command_defs.js';
 import { FormatOptions, DiscordRequest, DiscordSendImage, IsValidDiscordCDNUrl } from './utils.js';
-import { CreateImg2ImgReponse, CreateText2ImgReponse, CreateRemixReponse, CreateBusyResponse, CreateUpscaleReponse } from './interaction_responses.js';
+import { CreateImg2ImgReponse, CreateText2ImgReponse, CreateRemixReponse, CreateBusyResponse, CreateUpscaleReponse, CreateRegenReponse } from './interaction_responses.js';
 import { StartGateway, StopGateway } from './gateway.js';
-import base64url from 'base64url';
+import * as csv from './csv.js';
 
 const IMAGE_UPDATE_DELAY = 2000;
 let currentlyBusy = false;
@@ -61,49 +61,61 @@ async function HandleComponentInteraction(token, message, guild_id, data, res)
     {
         // get the filename, remove the extension with regex, then decode from base64url
         const url = message["embeds"][0]["image"]["url"];
-        const options = JSON.parse(base64url.decode(url.substr(url.lastIndexOf("/") + 1).replace(/\.\w+$/g, "")));
+        const oldGenId = url.substr(url.lastIndexOf("/") + 1).replace(/\.\w+$/g, "");
+        const options = JSON.parse(await csv.ReadEntry(oldGenId));
+        if (options === null) {
+            return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "This feature is unavailable for this generation.", flags: InteractionResponseFlags.EPHEMERAL}})
+        }
 
         if (data["custom_id"] === "RemixButton") {
             console.log(`Remixing image, Message ID = "${message["id"]}"`);
+            const genId = Math.floor(Number.MAX_SAFE_INTEGER * Math.random());
+            csv.WriteEntry(genId, JSON.stringify({...options, interaction_token: token}));
 
             // change some important options for remixes in the new options
             const newOptions = {...options, denoising_strength: 0.5, seed: Math.floor(Number.MAX_SAFE_INTEGER * Math.random()), url: message["embeds"][0]["image"]["url"]};
-            Img2Img(newOptions).then(json => EndImageGeneration(json["images"][0], token, newOptions));
+            Img2Img(newOptions).then(json => EndImageGeneration(json["images"][0], token, genId));
 
             currentlyBusy = true;
             currentToken = token;
-            UpdateImageLoop(token, newOptions);
+            UpdateImageLoop(token, genId);
             return res.send(CreateRemixReponse(guild_id, message["channel_id"], message["id"]));
         }
 
         if (data["custom_id"] === "RegenButton") {
-            // check if interaction token has expired (1420070400900 is discord epoch + 15mins)
-            console.log(options)
-            console.log((new Date(message["timestamp"])).getTime() + 900)
-            console.log(Date.now())
+            // check if interaction token has expired (830 is 15mins - 30s for safety)
             if ((new Date(message["timestamp"])).getTime() + 900000 < Date.now()) {
                 return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: "This generation is too old. Maximum time for regeneration is 15mins.", flags: InteractionResponseFlags.EPHEMERAL}})
             }
             console.log(`Regenerating image, Message ID = "${message["id"]}"`);
+            const genId = Math.floor(Number.MAX_SAFE_INTEGER * Math.random());
+
+            // re-gen the seed
+            const newOptions = {...options, seed: Math.floor(Number.MAX_SAFE_INTEGER * Math.random())};
+            csv.WriteEntry(genId, JSON.stringify(options));
 
             switch (options["gen_type"]) {
                 case commands.TXT2IMG["name"]:
-                    Txt2Img(options).then(json => EndImageGeneration(json["images"][0], options["interaction_token"], options));
+                    Text2Img(newOptions).then(json => EndImageGeneration(json["images"][0], options["interaction_token"], genId));
                     break;
                 case commands.IMG2IMG["name"]:
-                    Img2Img(options).then(json => EndImageGeneration(json["images"][0], options["interaction_token"], options));
+                    Img2Img(newOptions).then(json => EndImageGeneration(json["images"][0], options["interaction_token"], genId));
+                    break;
+                default:
+                    console.log("gen_type is missing/malformed.");
+                    return;
             }
 
             currentlyBusy = true;
-            currentToken = token;
-            UpdateImageLoop(options["interaction_token"], options);
-            return res.send(CreateRemixReponse(guild_id, message["channel_id"], message["id"]));
+            currentToken = options["interaction_token"];
+            UpdateImageLoop(options["interaction_token"], genId);
+            return res.send(CreateRegenReponse(guild_id, message["channel_id"], message["id"]));
         }
 
         if (data["custom_id"] === "UpscaleButton") {
             console.log(`Upscaling image, Message ID = "${message["id"]}"`);
 
-            Upscale(message["embeds"][0]["image"]["url"]).then(json => { UploadImageAttachment(token, json["image"], options["prompt"]); currentlyBusy = false });
+            Upscale(url).then(json => { UploadImageAttachment(token, json["image"], options["prompt"]); currentlyBusy = false });
 
             currentlyBusy = true;
             return res.send(CreateUpscaleReponse(guild_id, message["channel_id"], message["id"]));
@@ -118,7 +130,7 @@ async function HandleCommand(token, data, res)
 {
     const optionData = FormatOptions(data);
     const name = optionData[0];
-    const options = optionData[1];
+    const options = {...optionData[1], interaction_token: token};
 
     if (name[0] === commands.CANCEL_GENERATION["name"]) {
         if (currentToken !== null) {
@@ -161,11 +173,13 @@ async function HandleCommand(token, data, res)
             console.log(`Generating image with parameters: ${JSON.stringify(options)}`);
 			currentlyBusy = true;
             currentToken = token;
-            const newOptions = {...options, "gen_type": name[0]};
+            const genId = Math.floor(Number.MAX_SAFE_INTEGER * Math.random());
+            options["gen_type"] = commands.TXT2IMG["name"];
+            csv.WriteEntry(genId, JSON.stringify(options));
 
-            Text2Img(options).then(json => EndImageGeneration(json["images"][0], token, newOptions));
+            Text2Img(options).then(json => EndImageGeneration(json["images"][0], token, genId));
 
-            UpdateImageLoop(token, newOptions);
+            UpdateImageLoop(token, genId);
             return res.send(CreateText2ImgReponse(options));
         }
 
@@ -173,7 +187,9 @@ async function HandleCommand(token, data, res)
             console.log(`Generating image (img2img) with parameters: "${JSON.stringify(options)}"`);
 			currentlyBusy = true;
             currentToken = token;
-            const newOptions = {...options, "gen_type": name[0]};
+            const genId = Math.floor(Number.MAX_SAFE_INTEGER * Math.random());
+            options["gen_type"] = commands.IMG2IMG["name"];
+            csv.WriteEntry(genId, JSON.stringify(options));
 
             const urlError = IsValidDiscordCDNUrl(options["url"])
             if (urlError) {
@@ -181,9 +197,9 @@ async function HandleCommand(token, data, res)
                 return;
             }
 
-            Img2Img(options).then(json => EndImageGeneration(json["images"][0], token, newOptions));
+            Img2Img(options).then(json => EndImageGeneration(json["images"][0], token, genId));
 
-            UpdateImageLoop(token, newOptions);
+            UpdateImageLoop(token, genId);
             return res.send(CreateImg2ImgReponse(options));
         }
     }
@@ -192,17 +208,15 @@ async function HandleCommand(token, data, res)
     }
 }
 
-async function UploadImageAttachment(token, image, parameters)
+async function UploadImageAttachment(token, image, filename)
 {
     const endpoint = `webhooks/${process.env.APP_ID}/${token}/messages/@original`;
     //let attachmentId = (Date.now - 1420070400000) << 22
     
-    parameters["interaction_token"] = token;
-    console.log(parameters);
-    DiscordSendImage(endpoint, image, base64url.encode(JSON.stringify(parameters)));
+    DiscordSendImage(endpoint, image, filename);
 }
 
-async function UpdateImageLoop(token, parameters)
+async function UpdateImageLoop(token, filename)
 {
     var progress;
 
@@ -213,16 +227,16 @@ async function UpdateImageLoop(token, parameters)
         if (token !== currentToken) { break; }  // this should stop generations made too soon after the last one finished from overriding the last generation
         progress = json["progress"];
         console.log(`Generation progress: ${progress*100}%`);
-        await UploadImageAttachment(token, json["current_image"], parameters);
+        await UploadImageAttachment(token, json["current_image"], filename);
         
         await new Promise(resolve => setTimeout(resolve, IMAGE_UPDATE_DELAY));
     }
 }
 
-async function EndImageGeneration(finalImage, token, parameters)
+async function EndImageGeneration(finalImage, token, filename)
 {
     if (currentToken !== token) { return; }
-    await UploadImageAttachment(token, finalImage, parameters);
+    await UploadImageAttachment(token, finalImage, filename);
 	currentlyBusy = false;
     currentToken = null;
     console.log("Generation completed.")
