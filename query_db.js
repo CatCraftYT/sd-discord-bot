@@ -9,7 +9,8 @@ export async function ConvertFile() {
     const stream = (await open(FILENAME)).createReadStream();
     const rl = readline.createInterface(stream);
     for await (const line of rl) {
-        appendFile("export.json.log", JSON.stringify(JSON.parse(Buffer.from(line.split(",")[1], "base64").toString()), undefined, 4) + "\n", (err) => {if (err !== null) { throw err }});
+        const data = line.split(",");
+        appendFile("export.json.log", data[0] + ":\n" + JSON.stringify(JSON.parse(Buffer.from(data[1], "base64").toString()), undefined, 4) + "\n", (err) => {if (err !== null) { throw err }});
     }
     stream.close();
 }
