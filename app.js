@@ -75,7 +75,7 @@ async function HandleComponentInteraction(token, message, guild_id, data, member
 
             // change some important options for remixes in the new options
             const newOptions = {...options, denoising_strength: 0.5, seed: Math.floor(Number.MAX_SAFE_INTEGER * Math.random()), url: message["embeds"][0]["image"]["url"]};
-            Img2Img(newOptions).then(json => EndImageGeneration(json["images"][0], token, interactionEditEndpoint, genId));
+            Img2Img(newOptions).then(json => EndImageGeneration(json["images"][0], token, interactionEditEndpoint, genId)).catch(HandleError);
 
             currentlyBusy = true;
             currentToken = token;
@@ -94,10 +94,10 @@ async function HandleComponentInteraction(token, message, guild_id, data, member
 
             switch (options["gen_type"]) {
                 case commands.TXT2IMG["name"]:
-                    Text2Img(newOptions).then(json => EndImageGeneration(json["images"][0], token, endpoint, genId));
+                    Text2Img(newOptions).then(json => EndImageGeneration(json["images"][0], token, endpoint, genId)).catch(HandleError);
                     break;
                 case commands.IMG2IMG["name"]:
-                    Img2Img(newOptions).then(json => EndImageGeneration(json["images"][0], token, endpoint, genId));
+                    Img2Img(newOptions).then(json => EndImageGeneration(json["images"][0], token, endpoint, genId)).catch(HandleError);
                     break;
                 default:
                     console.log("gen_type is missing/malformed.");
@@ -113,7 +113,7 @@ async function HandleComponentInteraction(token, message, guild_id, data, member
         if (data["custom_id"] === "UpscaleButton") {
             console.log(`Upscaling image, Message ID = "${message["id"]}"`);
 
-            Upscale(url).then(json => { DiscordSendImage(interactionEditEndpoint, json["image"], "upscaled_image"); currentlyBusy = false });
+            Upscale(url).then(json => { DiscordSendImage(interactionEditEndpoint, json["image"], "upscaled_image"); currentlyBusy = false }).catch(HandleError);
 
             currentlyBusy = true;
             return res.send(CreateUpscaleReponse(guild_id, message["channel_id"], message["id"]));
@@ -154,7 +154,7 @@ async function HandleCommand(token, data, member, res)
                 SetModel(options["model"]).then(() => {
                     DiscordRequest(`webhooks/${process.env.APP_ID}/${token}`, {method: "POST", body: {content: "Model changed."}});
                     currentlyBusy = false;
-                });
+                }).catch(HandleError);
         
                 return res.send({type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE, data: {content: `> Changing model to \`${options["model"]}\``}});
             }
@@ -176,7 +176,7 @@ async function HandleCommand(token, data, member, res)
             options["gen_type"] = commands.TXT2IMG["name"];
             csv.WriteEntry(genId, JSON.stringify(options));
 
-            Text2Img(options).then(json => EndImageGeneration(json["images"][0], token, interactionEditEndpoint, genId));
+            Text2Img(options).then(json => EndImageGeneration(json["images"][0], token, interactionEditEndpoint, genId)).catch(HandleError);
 
             UpdateImageLoop(token, interactionEditEndpoint, genId);
             return res.send(CreateText2ImgReponse(options));
@@ -196,7 +196,7 @@ async function HandleCommand(token, data, member, res)
                 return;
             }
 
-            Img2Img(options).then(json => EndImageGeneration(json["images"][0], token, interactionEditEndpoint, genId));
+            Img2Img(options).then(json => EndImageGeneration(json["images"][0], token, interactionEditEndpoint, genId)).catch(HandleError);
 
             UpdateImageLoop(token, interactionEditEndpoint, genId);
             return res.send(CreateImg2ImgReponse(options));
@@ -231,4 +231,13 @@ async function EndImageGeneration(finalImage, token, endpoint, filename)
 	currentlyBusy = false;
     currentToken = null;
     console.log("Generation completed.")
+}
+
+function HandleError(exception) {
+    console.log("An exception occured!");
+    console.log(exception);
+    SendGenInterrupt();
+    currentlyBusy = false;
+    DiscordRequest(`/webhooks/${process.env.APP_ID}/${currentToken}`, {body: {content: "> Sorry - An error occurred while processing your command."}, method: "POST"});
+    console.log("Continuing.");
 }

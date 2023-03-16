@@ -2,7 +2,7 @@
 import { GetStyles, GetSamplers, GetModels } from './sd_api.js';
 
 // this stuff will execute first so the webui waiting needs to be here
-console.log("Don't forget to add interaction endpoint in discord application! (https://discord.com/developers/applications)")
+console.log("Don't forget to add your interaction endpoint in discord application! (https://discord.com/developers/applications)")
 console.log("Waiting for webui api...");
 while (true)
 {

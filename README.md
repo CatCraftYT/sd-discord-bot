@@ -5,6 +5,7 @@ This is a discord bot for use with [AUTOMATIC1111's stable diffusion webui](http
 - Install [node.js](https://nodejs.org).
 - Setup and download [ngrok](https://ngrok.com) or forward port 3000.
 - Download and setup AUTOMATIC1111's Stable Diffusion webui ([installation instructions](https://github.com/AUTOMATIC1111/stable-diffusion-webui#installation-and-running)).
+- Enable the webui API. On Windows, add `set COMMANDLINE_ARGS=--api` to `webui-user.bat`. On other systems, change `#export COMMANDLINE_ARGS=""` to `#export COMMANDLINE_ARGS="--api"`.
 - Create an app and bot in the Discord developer dashboard, and install it to your server ([guide](https://discord.com/developers/docs/getting-started#creating-an-app)). **The bot requires attach files and embed links permissions** (on top of the basic permissions in the guide).
 - Create a file in the bot's folder called `.env` and put the following inside it:
 ```

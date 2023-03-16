@@ -3,6 +3,7 @@ import fetch_async from 'node-fetch';
 
 // all of this is literally just to make the bot appear online :(
 
+const showHeartbeatResponsesInConsole = false;
 const gatewayUrl = (await (await fetch_async("https://discord.com/api/v10/gateway")).json())["url"]
 var ws;
 let gatewayIsActive = false;
@@ -25,7 +26,7 @@ export async function StartGateway() {
     ws.on("message", (data) => {
         let jsonData = JSON.parse(data);
         //console.log(jsonData);
-        console.log(`Recieved data from Gateway, opcode: ${jsonData["op"]}`)
+        if (!(jsonData["op"] === 11) || showHeartbeatResponsesInConsole) { console.log(`Recieved data from Gateway, opcode: ${jsonData["op"]}`); }
         if (jsonData["op"] === 11) {
             recievedACK = true;
         }

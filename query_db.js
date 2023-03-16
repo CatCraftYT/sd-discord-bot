@@ -21,6 +21,7 @@ const rl = readline.createInterface({
 });
 const prompt = (query) => new Promise((resolve) => rl.question(query, resolve));
 
+console.log("Enter the generation ID of the entry you want to see. This will be the filename of the generation, without an extension. Alternatively, enter \"export\" to export the entire file to json.")
 while (true) {
     const id = await prompt("> ");
     if (id === "export") {
